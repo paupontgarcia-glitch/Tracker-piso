@@ -381,6 +381,12 @@ function calcCom() {
 });
 
 // --- SLIDERS ---
+var saveTimer = null;
+function debouncedSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveConfig, 1200);
+}
+
 function bindSlider(id, outId, fmtFn) {
   document.getElementById(id).addEventListener('input', function() {
     document.getElementById(outId).textContent = fmtFn(this.value);
@@ -418,12 +424,6 @@ document.getElementById('h-plazo').addEventListener('input', function() { docume
 });
 
 // --- SALDOS Y CONFIG ---
-var saveTimer = null;
-function debouncedSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveConfig, 1200);
-}
-
 function saveConfig() {
   setSyncStatus('loading', 'Guardando...');
   var rows = [
@@ -528,8 +528,11 @@ function renderChecks(elId, items, grupo) {
     var done = checkState[grupo].indexOf(i) > -1;
     var div = document.createElement('div');
     div.className = 'check-item' + (done ? ' done' : '');
-    div.innerHTML = '<div class="check-box">' + (done ? '✓' : '') + '</div><div><div class="check-text">' + item[0] + '</div><div class="check-sub">' + item[1] + '</div></div>';
-    div.onclick = function() {
+    div.innerHTML = '<div class="check-box">' + (done ? '\u2713' : '') + '</div><div><div class="check-text">' + item[0] + '</div><div class="check-sub">' + item[1] + '</div></div>';
+    div.style.cursor = 'pointer';
+    div.style.webkitTapHighlightColor = 'rgba(0,0,0,0.05)';
+    div.style.touchAction = 'manipulation';
+    div.addEventListener('click', function() {
       var idx = checkState[grupo].indexOf(i);
       if (idx > -1) checkState[grupo].splice(idx, 1); else checkState[grupo].push(i);
       renderChecks(elId, items, grupo);
@@ -543,7 +546,7 @@ function renderChecks(elId, items, grupo) {
       sheetWrite('checklist', rows).then(function() {
         setSyncStatus('ok', 'Sincronizado \u00b7 ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'}));
       });
-    };
+    });
     el.appendChild(div);
   });
 }
