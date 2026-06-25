@@ -398,11 +398,13 @@ function syncSliders(id1, id2, outId, fmtFn) {
   document.getElementById(id1).addEventListener('input', function() {
     document.getElementById(id2).value = this.value;
     document.getElementById(outId).textContent = fmtFn(this.value);
+    document.getElementById(id2 + '-v') && (document.getElementById(id2 + '-v').textContent = fmtFn(this.value));
     calcular(); calcHipoteca();
   });
   document.getElementById(id2).addEventListener('input', function() {
     document.getElementById(id1).value = this.value;
     document.getElementById(outId).textContent = fmtFn(this.value);
+    document.getElementById(id1 + '-v') && (document.getElementById(id1 + '-v').textContent = fmtFn(this.value));
     calcular(); calcHipoteca();
   });
 }
@@ -412,6 +414,11 @@ bindSlider('sMar', 'sMar-v', function(v) { return parseInt(v).toLocaleString('es
 bindSlider('comPau', 'comPau-v', function(v) { return parseInt(v).toLocaleString('es-ES') + ' \u20AC'; });
 syncSliders('precio', 'h-precio', 'precio-v', function(v) { return parseInt(v).toLocaleString('es-ES') + ' \u20AC'; });
 syncSliders('finPct', 'h-fin', 'finPct-v', function(v) { return v + '%'; });
+// Keep hipoteca tab labels in sync too
+document.getElementById('precio').addEventListener('input', function() { document.getElementById('h-precio-v').textContent = parseInt(this.value).toLocaleString('es-ES') + ' \u20AC'; });
+document.getElementById('h-precio').addEventListener('input', function() { document.getElementById('h-precio-v').textContent = parseInt(this.value).toLocaleString('es-ES') + ' \u20AC'; document.getElementById('precio-v').textContent = parseInt(this.value).toLocaleString('es-ES') + ' \u20AC'; });
+document.getElementById('finPct').addEventListener('input', function() { document.getElementById('h-fin-v').textContent = this.value + '%'; });
+document.getElementById('h-fin').addEventListener('input', function() { document.getElementById('h-fin-v').textContent = this.value + '%'; document.getElementById('finPct-v').textContent = this.value + '%'; });
 document.getElementById('h-tipo').addEventListener('input', function() { document.getElementById('h-tipo-v').textContent = parseFloat(this.value).toFixed(1).replace('.',',') + '%'; calcHipoteca(); });
 document.getElementById('h-plazo').addEventListener('input', function() { document.getElementById('h-plazo-v').textContent = this.value + ' a\u00f1os'; calcHipoteca(); });
 // Auto-save on any change
@@ -556,7 +563,7 @@ function loadChecks() {
     if (data && data.length > 0) {
       checkState = { prep: [], busqueda: [], cierre: [] };
       data.forEach(function(row) {
-        if (row[0] && checkState[row[0]] !== undefined && row[2] === 'true') {
+        if (row[0] && checkState[row[0]] !== undefined && (row[2] === true || row[2] === 'true')) {
           var idx = parseInt(row[1]);
           if (checkState[row[0]].indexOf(idx) === -1) checkState[row[0]].push(idx);
         }
