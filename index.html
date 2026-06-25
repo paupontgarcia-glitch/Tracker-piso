@@ -291,7 +291,8 @@ function sheetRead(sheet) {
   return fetch(API + '?action=read&sheet=' + sheet).then(function(r) { return r.json(); });
 }
 function sheetWrite(sheet, rows) {
-  return fetch(API + '?action=write&sheet=' + sheet, { method: 'POST', body: JSON.stringify(rows) });
+  var encoded = encodeURIComponent(JSON.stringify(rows));
+  return fetch(API + '?action=write&sheet=' + sheet + '&data=' + encoded);
 }
 
 // --- HIPOTECA ---
