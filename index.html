@@ -407,41 +407,87 @@ syncSliders('precio', 'h-precio', 'precio-v', function(v) { return parseInt(v).t
 syncSliders('finPct', 'h-fin', 'finPct-v', function(v) { return v + '%'; });
 document.getElementById('h-tipo').addEventListener('input', function() { document.getElementById('h-tipo-v').textContent = parseFloat(this.value).toFixed(1).replace('.',',') + '%'; calcHipoteca(); });
 document.getElementById('h-plazo').addEventListener('input', function() { document.getElementById('h-plazo-v').textContent = this.value + ' a\u00f1os'; calcHipoteca(); });
-['saldo-pau','saldo-mar','saldo-prestamo','saldo-colchon'].forEach(function(id) {
-  document.getElementById(id).addEventListener('input', calcular);
+// Auto-save on any change
+['mes','sPau','sMar','comPau','precio','finPct','h-precio','h-fin','h-tipo','h-plazo',
+ 'saldo-pau','saldo-mar','saldo-prestamo','saldo-colchon',
+ 'c1-ventas','c1-media','c1-irpf','c1-anyos',
+ 'c2-ventas','c2-media','c2-irpf','c2-anyos',
+ 'c3-ventas','c3-media','c3-irpf','c3-anyos'].forEach(function(id) {
+  document.getElementById(id).addEventListener('change', debouncedSave);
+  document.getElementById(id).addEventListener('input', debouncedSave);
 });
 
-// --- SALDOS ---
-function guardarSaldos() {
-  var btn = document.getElementById('btn-guardar');
-  btn.disabled = true; btn.textContent = 'Guardando...';
-  setSyncStatus('loading', 'Guardando saldos...');
+// --- SALDOS Y CONFIG ---
+var saveTimer = null;
+function debouncedSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveConfig, 1200);
+}
+
+function saveConfig() {
+  setSyncStatus('loading', 'Guardando...');
   var rows = [
     ['saldo_pau', document.getElementById('saldo-pau').value],
     ['saldo_mar', document.getElementById('saldo-mar').value],
     ['saldo_prestamo', document.getElementById('saldo-prestamo').value],
-    ['saldo_colchon', document.getElementById('saldo-colchon').value]
+    ['saldo_colchon', document.getElementById('saldo-colchon').value],
+    ['mes', document.getElementById('mes').value],
+    ['precio', document.getElementById('precio').value],
+    ['finPct', document.getElementById('finPct').value],
+    ['sPau', document.getElementById('sPau').value],
+    ['sMar', document.getElementById('sMar').value],
+    ['comPau', document.getElementById('comPau').value],
+    ['h_tipo', document.getElementById('h-tipo').value],
+    ['h_plazo', document.getElementById('h-plazo').value],
+    ['c1_ventas', document.getElementById('c1-ventas').value],
+    ['c1_media', document.getElementById('c1-media').value],
+    ['c1_irpf', document.getElementById('c1-irpf').value],
+    ['c1_anyos', document.getElementById('c1-anyos').value],
+    ['c2_ventas', document.getElementById('c2-ventas').value],
+    ['c2_media', document.getElementById('c2-media').value],
+    ['c2_irpf', document.getElementById('c2-irpf').value],
+    ['c2_anyos', document.getElementById('c2-anyos').value],
+    ['c3_ventas', document.getElementById('c3-ventas').value],
+    ['c3_media', document.getElementById('c3-media').value],
+    ['c3_irpf', document.getElementById('c3-irpf').value],
+    ['c3_anyos', document.getElementById('c3-anyos').value]
   ];
   sheetWrite('notas', rows).then(function() {
-    btn.disabled = false; btn.textContent = 'Guardado \u2713';
     setSyncStatus('ok', 'Sincronizado \u00b7 ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'}));
-    setTimeout(function() { btn.textContent = 'Guardar saldos'; }, 2000);
   }).catch(function() {
-    btn.disabled = false; btn.textContent = 'Guardar saldos';
     setSyncStatus('err', 'Error al guardar');
   });
 }
-function loadSaldos() {
+
+function setEl(id, val) {
+  var el = document.getElementById(id);
+  if (el && val !== undefined && val !== '') el.value = val;
+}
+function loadConfig() {
   return sheetRead('notas').then(function(data) {
-    if (data && data.length > 0) {
-      data.forEach(function(row) {
-        if (row[0] === 'saldo_pau' && row[1]) document.getElementById('saldo-pau').value = row[1];
-        if (row[0] === 'saldo_mar' && row[1]) document.getElementById('saldo-mar').value = row[1];
-        if (row[0] === 'saldo_prestamo' && row[1]) document.getElementById('saldo-prestamo').value = row[1];
-        if (row[0] === 'saldo_colchon' && row[1]) document.getElementById('saldo-colchon').value = row[1];
-      });
-    }
-  }).catch(function() {}).then(function() { calcular(); });
+    if (!data || data.length === 0) return;
+    var map = {};
+    data.forEach(function(row) { if (row[0]) map[row[0]] = row[1]; });
+    setEl('saldo-pau', map['saldo_pau']);
+    setEl('saldo-mar', map['saldo_mar']);
+    setEl('saldo-prestamo', map['saldo_prestamo']);
+    setEl('saldo-colchon', map['saldo_colchon']);
+    setEl('mes', map['mes']); if (map['mes']) document.getElementById('mes-v').textContent = map['mes'] + ' / 24';
+    setEl('precio', map['precio']); setEl('h-precio', map['precio']);
+    if (map['precio']) { var pv = parseInt(map['precio']).toLocaleString('es-ES') + ' \u20AC'; document.getElementById('precio-v').textContent = pv; document.getElementById('h-precio-v').textContent = pv; }
+    setEl('finPct', map['finPct']); setEl('h-fin', map['finPct']);
+    if (map['finPct']) { document.getElementById('finPct-v').textContent = map['finPct'] + '%'; document.getElementById('h-fin-v').textContent = map['finPct'] + '%'; }
+    setEl('sPau', map['sPau']); if (map['sPau']) document.getElementById('sPau-v').textContent = parseInt(map['sPau']).toLocaleString('es-ES') + ' \u20AC';
+    setEl('sMar', map['sMar']); if (map['sMar']) document.getElementById('sMar-v').textContent = parseInt(map['sMar']).toLocaleString('es-ES') + ' \u20AC';
+    setEl('comPau', map['comPau']); if (map['comPau']) document.getElementById('comPau-v').textContent = parseInt(map['comPau']).toLocaleString('es-ES') + ' \u20AC';
+    setEl('h-tipo', map['h_tipo']); if (map['h_tipo']) document.getElementById('h-tipo-v').textContent = parseFloat(map['h_tipo']).toFixed(1).replace('.',',') + '%';
+    setEl('h-plazo', map['h_plazo']); if (map['h_plazo']) document.getElementById('h-plazo-v').textContent = map['h_plazo'] + ' a\u00f1os';
+    setEl('c1-ventas', map['c1_ventas']); setEl('c1-media', map['c1_media']); setEl('c1-irpf', map['c1_irpf']); setEl('c1-anyos', map['c1_anyos']);
+    setEl('c2-ventas', map['c2_ventas']); setEl('c2-media', map['c2_media']); setEl('c2-irpf', map['c2_irpf']); setEl('c2-anyos', map['c2_anyos']);
+    setEl('c3-ventas', map['c3_ventas']); setEl('c3-media', map['c3_media']); setEl('c3-irpf', map['c3_irpf']); setEl('c3-anyos', map['c3_anyos']);
+  }).catch(function() {}).then(function() {
+    calcular(); calcCom(); calcHipoteca();
+  });
 }
 
 // --- CHECKLIST ---
@@ -563,7 +609,12 @@ function savePiso() {
   closeModal(); renderPisos(); savePisos();
 }
 // Wire up remaining buttons
-document.getElementById('btn-guardar').addEventListener('click', guardarSaldos);
+document.getElementById('btn-guardar').addEventListener('click', function() {
+  var btn = document.getElementById('btn-guardar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  saveConfig();
+  setTimeout(function() { btn.disabled = false; btn.textContent = 'Guardado \u2713'; setTimeout(function() { btn.textContent = 'Guardar saldos'; }, 2000); }, 1400);
+});
 document.getElementById('btn-add-piso').addEventListener('click', openModal);
 document.getElementById('btn-cancel').addEventListener('click', closeModal);
 document.getElementById('btn-save').addEventListener('click', savePiso);
@@ -594,7 +645,7 @@ renderPisos();
 
 // Then load from Sheets in background
 setSyncStatus('loading', 'Conectando con Google Sheets...');
-Promise.all([loadSaldos(), loadChecks(), loadPisos()]).then(function() {
+Promise.all([loadConfig(), loadChecks(), loadPisos()]).then(function() {
   setSyncStatus('ok', 'Sincronizado \u00b7 ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'}));
 }).catch(function() {
   setSyncStatus('err', 'Error de conexi\u00f3n');
